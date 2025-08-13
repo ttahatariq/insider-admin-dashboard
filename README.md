@@ -1,70 +1,191 @@
-# Getting Started with Create React App
+# Insider Threat Detection Admin Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, responsive admin dashboard for monitoring and managing insider threat detection systems. Built with React and featuring a clean, professional interface.
 
-## Available Scripts
+## ✨ Features
 
-In the project directory, you can run:
+### 🎯 **Modern Dashboard Interface**
+- **Tabbed Navigation**: Clean separation between Users, Flagged Users, and Activity Logs
+- **Statistics Overview**: Real-time dashboard statistics with visual indicators
+- **Responsive Design**: Mobile-friendly interface that works on all devices
+- **Professional Styling**: Modern gradient backgrounds and glass-morphism effects
 
-### `npm start`
+### 👥 **User Management**
+- **User Table**: Comprehensive user listing with search and sort functionality
+- **User Actions**: Block/unblock users with real-time status updates
+- **User Avatars**: Visual user representation with initials
+- **Role Management**: Clear role identification with color-coded badges
+- **Status Tracking**: Active/blocked user status with visual indicators
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 🚨 **Flagged Users Management**
+- **Risk Assessment**: Automatic risk level calculation based on activity patterns
+- **Visual Risk Indicators**: Color-coded risk levels (High, Medium, Low)
+- **Risk Details**: Comprehensive view of risk factors and notes
+- **Quick Actions**: One-click user unblocking with processing states
+- **Empty States**: Helpful messaging when no users are flagged
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 📊 **Activity Logs Viewer**
+- **User-Specific Logs**: View detailed activity logs for any user
+- **Advanced Filtering**: Filter by activity type and risk level
+- **Search Functionality**: Search through logs by action or IP address
+- **Risk Scoring**: Visual risk assessment for each activity
+- **Action Icons**: Intuitive icons for different types of activities
+- **Detailed Information**: IP addresses, timestamps, user agents, and more
 
-### `npm test`
+### 🔐 **Enhanced Security**
+- **Modern Login**: Professional login interface with error handling
+- **Form Validation**: Client-side validation for better user experience
+- **Loading States**: Visual feedback during authentication
+- **Error Handling**: Comprehensive error messages and recovery options
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🚀 Getting Started
 
-### `npm run build`
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd insider-admin-dashboard
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### `npm run eject`
+3. **Start the development server**
+   ```bash
+   npm start
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+4. **Open your browser**
+   Navigate to `http://localhost:3000`
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Building for Production
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm run build
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 🏗️ Architecture
 
-## Learn More
+### Component Structure
+```
+src/
+├── components/
+│   ├── UserTable.js          # User management component
+│   ├── FlaggedUsers.js       # Flagged users management
+│   ├── LogsViewer.js         # Activity logs viewer
+│   └── [Component].css       # Component-specific styles
+├── pages/
+│   ├── Dashboard.js          # Main dashboard with tabs
+│   ├── Login.js              # Authentication interface
+│   └── [Page].css            # Page-specific styles
+├── api.js                    # API configuration
+└── App.js                    # Main application component
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Key Features Implementation
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### **Error Handling**
+- Comprehensive try-catch blocks for all API calls
+- User-friendly error messages with recovery options
+- Loading states to prevent multiple submissions
 
-### Code Splitting
+#### **Responsive Design**
+- Mobile-first approach with breakpoints at 768px and 480px
+- Flexible grid layouts that adapt to screen sizes
+- Touch-friendly interface elements
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+#### **Performance Optimizations**
+- Efficient state management with React hooks
+- Optimized re-renders with proper dependency arrays
+- Lazy loading of components when possible
 
-### Analyzing the Bundle Size
+## 🎨 Design System
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Color Palette
+- **Primary**: Gradient from #667eea to #764ba2
+- **Success**: #68d391 to #48bb78
+- **Warning**: #f6ad55
+- **Danger**: #fc8181
+- **Info**: #63b3ed
 
-### Making a Progressive Web App
+### Typography
+- **Font Family**: System fonts with fallbacks
+- **Font Weights**: 400 (normal), 500 (medium), 600 (semibold), 700 (bold)
+- **Line Heights**: Optimized for readability
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Spacing
+- **Base Unit**: 0.25rem (4px)
+- **Consistent Scale**: 0.25rem, 0.5rem, 0.75rem, 1rem, 1.5rem, 2rem, 3rem
 
-### Advanced Configuration
+## 🔧 Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### API Configuration
+The dashboard connects to your backend API. Update the base URL in `src/api.js`:
 
-### Deployment
+```javascript
+const API = axios.create({
+  baseURL: "http://your-api-url/api/users",
+});
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Environment Variables
+Create a `.env` file in the root directory:
 
-### `npm run build` fails to minify
+```env
+REACT_APP_API_URL=http://your-api-url
+REACT_APP_DASHBOARD_TITLE=Your Dashboard Title
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 📱 Browser Support
+
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
+## 📦 Dependencies
+
+- **React 18.2.0**: Modern React with hooks
+- **Axios 1.6.2**: HTTP client for API calls
+- **React Scripts 5.0.1**: Create React App scripts
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Check the documentation
+- Review the code examples
+
+---
+
+**Built with ❤️ for security professionals**
