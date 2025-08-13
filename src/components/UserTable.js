@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import API from "../api";
 import "./UserTable.css";
 
-export default function UserTable() {
+export default function UserTable({ userRole, onUserStatusChanged, onViewLogs }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [userRole]);
 
   const fetchUsers = async () => {
     try {
@@ -21,7 +21,11 @@ export default function UserTable() {
       const response = await API.get("/all-users");
       setUsers(response.data);
     } catch (err) {
-      setError("Failed to fetch users. Please try again later.");
+      if (err.response?.status === 403) {
+        setError("You don't have permission to view all users. Contact your administrator.");
+      } else {
+        setError("Failed to fetch users. Please try again later.");
+      }
       console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
@@ -34,6 +38,36 @@ export default function UserTable() {
     } else {
       setSortBy(field);
       setSortOrder("asc");
+    }
+  };
+
+  const copyUserId = async (userId) => {
+    try {
+      await navigator.clipboard.writeText(userId);
+      // Visual feedback
+      const element = document.querySelector(`[data-user-id="${userId}"]`);
+      if (element) {
+        element.style.background = '#48bb78';
+        element.style.color = 'white';
+        setTimeout(() => {
+          element.style.background = '';
+          element.style.color = '';
+        }, 1000);
+      }
+      // You could add a toast notification here
+      console.log("User ID copied to clipboard:", userId);
+    } catch (err) {
+      console.error("Failed to copy user ID:", err);
+    }
+  };
+
+  const viewUserLogs = (userId, userName) => {
+    if (onViewLogs) {
+      onViewLogs(userId, userName);
+    } else {
+      // Fallback: copy the user ID
+      copyUserId(userId);
+      alert(`User ID copied: ${userId}\n\nYou can now go to the Activity Logs tab and paste this ID to view logs for ${userName}`);
     }
   };
 
@@ -55,19 +89,34 @@ export default function UserTable() {
     });
 
   const toggleUserStatus = async (userId, currentStatus) => {
+    if (!["Admin", "Manager"].includes(userRole)) {
+      setError("You don't have permission to block/unblock users.");
+      return;
+    }
+
     try {
       if (currentStatus) {
         await API.post(`/unblock/${userId}`);
       } else {
-        await API.post(`/block/${userId}`);
+        // For blocking, we'll need to implement this endpoint
+        setError("Blocking users is not yet implemented.");
+        return;
       }
       // Refresh the users list
       fetchUsers();
+      onUserStatusChanged && onUserStatusChanged(userId, !currentStatus);
     } catch (err) {
-      setError("Failed to update user status. Please try again.");
+      if (err.response?.status === 403) {
+        setError("You don't have permission to perform this action.");
+      } else {
+        setError("Failed to update user status. Please try again.");
+      }
       console.error("Error updating user status:", err);
     }
   };
+
+  const canManageUsers = ["Admin", "Manager"].includes(userRole);
+  const canSeeAllData = userRole === "Admin";
 
   if (loading) {
     return (
@@ -114,6 +163,12 @@ export default function UserTable() {
         </div>
       </div>
 
+      {!canManageUsers && (
+        <div className="permission-notice">
+          <p>ℹ️ You have limited access to user data based on your role: <strong>{userRole}</strong></p>
+        </div>
+      )}
+
       {filteredAndSortedUsers.length === 0 ? (
         <div className="empty-state">
           <p>No users found matching your search criteria.</p>
@@ -123,6 +178,9 @@ export default function UserTable() {
           <table className="data-table">
             <thead>
               <tr>
+                <th onClick={() => handleSort("_id")} className="sortable">
+                  User ID {sortBy === "_id" && (sortOrder === "asc" ? "↑" : "↓")}
+                </th>
                 <th onClick={() => handleSort("name")} className="sortable">
                   Name {sortBy === "name" && (sortOrder === "asc" ? "↑" : "↓")}
                 </th>
@@ -135,12 +193,15 @@ export default function UserTable() {
                 <th onClick={() => handleSort("isBlocked")} className="sortable">
                   Status {sortBy === "isBlocked" && (sortOrder === "asc" ? "↑" : "↓")}
                 </th>
-                <th>Actions</th>
+                {canManageUsers && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {filteredAndSortedUsers.map((user) => (
                 <tr key={user._id} className={user.isBlocked ? "blocked-user" : ""}>
+                  <td className="user-id">
+                    <span className="id-text" title="Click to copy ID" onClick={() => copyUserId(user._id)} data-user-id={user._id}>{user._id}</span>
+                  </td>
                   <td>
                     <div className="user-info">
                       <div className="user-avatar">
@@ -161,12 +222,27 @@ export default function UserTable() {
                     </span>
                   </td>
                   <td>
-                    <button
-                      onClick={() => toggleUserStatus(user._id, user.isBlocked)}
-                      className={`action-button ${user.isBlocked ? "unblock" : "block"}`}
-                    >
-                      {user.isBlocked ? "Unblock" : "Block"}
-                    </button>
+                    <div className="user-actions">
+                      <button
+                        onClick={() => viewUserLogs(user._id, user.name)}
+                        className="action-button view-logs"
+                        title="View user activity logs"
+                      >
+                        📊 View Logs
+                      </button>
+                      {canManageUsers && (
+                        user.isBlocked ? (
+                          <button
+                            onClick={() => toggleUserStatus(user._id, user.isBlocked)}
+                            className="action-button unblock"
+                          >
+                            Unblock
+                          </button>
+                        ) : (
+                          <span className="no-action">No action needed</span>
+                        )
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -177,6 +253,11 @@ export default function UserTable() {
 
       <div className="table-footer">
         <p>Showing {filteredAndSortedUsers.length} of {users.length} users</p>
+        {!canManageUsers && (
+          <p className="permission-note">
+            <small>Note: You have limited access based on your {userRole} role</small>
+          </p>
+        )}
       </div>
     </div>
   );

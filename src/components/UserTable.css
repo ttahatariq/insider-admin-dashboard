@@ -28,6 +28,19 @@
   align-items: center;
 }
 
+.permission-notice {
+  background: #bee3f8;
+  color: #2b6cb0;
+  padding: 1rem 2rem;
+  border-left: 4px solid #3182ce;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.permission-notice p {
+  margin: 0;
+}
+
 .search-box {
   position: relative;
   display: flex;
@@ -138,6 +151,46 @@
   background: #fee2e2;
 }
 
+.user-id {
+  max-width: 200px;
+  word-break: break-all;
+}
+
+.id-text {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #718096;
+  background: #f7fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.id-text:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  color: #4a5568;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: none;
+  overflow: visible;
+  z-index: 10;
+  position: relative;
+}
+
+.id-text:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -190,6 +243,16 @@
   color: #2b6cb0;
 }
 
+.role-analyst {
+  background: #fef5e7;
+  color: #d69e2e;
+}
+
+.role-intern {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
 .role-unknown {
   background: #e2e8f0;
   color: #4a5568;
@@ -232,12 +295,25 @@
 }
 
 .action-button.unblock {
-  background: #c6f6d5;
-  color: #22543d;
+  background: linear-gradient(135deg, #48bb78, #38a169);
 }
 
-.action-button.unblock:hover {
-  background: #9ae6b4;
+.action-button.view-logs {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  margin-right: 0.5rem;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.no-action {
+  color: #a0aec0;
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 .loading-spinner {
@@ -292,8 +368,17 @@
   border-top: 1px solid #e2e8f0;
   background: #f7fafc;
   text-align: center;
+}
+
+.table-footer p {
+  margin: 0.5rem 0;
   color: #718096;
   font-size: 0.9rem;
+}
+
+.permission-note {
+  color: #a0aec0;
+  font-size: 0.8rem;
 }
 
 /* Responsive Design */

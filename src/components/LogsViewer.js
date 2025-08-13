@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import API from "../api";
 import "./LogsViewer.css";
 
-export default function LogsViewer() {
+export default function LogsViewer({ userRole }) {
   const [userId, setUserId] = useState("");
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,8 +23,46 @@ export default function LogsViewer() {
       const response = await API.get(`/logs/${userId}`);
       setLogs(response.data);
     } catch (err) {
-      setError("Failed to load logs. Please check the User ID and try again.");
+      if (err.response?.status === 403) {
+        setError("You don't have permission to view logs for this user. Check your role permissions.");
+      } else {
+        setError("Failed to load logs. Please check the User ID and try again.");
+      }
       console.error("Error loading logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOwnLogs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await API.get("/my-logs");
+      setLogs(response.data);
+      setUserId("Your Logs");
+    } catch (err) {
+      setError("Failed to load your logs. Please try again.");
+      console.error("Error loading own logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAllLogs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await API.get("/all-logs");
+      setLogs(response.data);
+      setUserId("All Users");
+    } catch (err) {
+      if (err.response?.status === 403) {
+        setError("You don't have permission to view all logs. Admin access required.");
+      } else {
+        setError("Failed to load all logs. Please try again.");
+      }
+      console.error("Error loading all logs:", err);
     } finally {
       setLoading(false);
     }
@@ -79,6 +117,9 @@ export default function LogsViewer() {
     return { level: "None", color: "success" };
   };
 
+  const canViewOtherUserLogs = ["Admin", "Manager"].includes(userRole);
+  const canViewAllLogs = userRole === "Admin";
+
   return (
     <div className="component-container">
       <div className="component-header">
@@ -108,31 +149,69 @@ export default function LogsViewer() {
 
       <div className="logs-controls">
         <div className="user-input-section">
-          <div className="input-group">
-            <label htmlFor="userId">User ID:</label>
-            <input
-              id="userId"
-              type="text"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="Enter User ID to view logs"
-              className="user-id-input"
-            />
-          </div>
-          <button 
-            onClick={loadLogs} 
-            disabled={loading || !userId.trim()}
-            className="load-logs-button"
-          >
-            {loading ? (
-              <>
-                <span className="mini-spinner"></span>
-                Loading...
-              </>
-            ) : (
-              'Load Logs'
-            )}
-          </button>
+          {canViewOtherUserLogs ? (
+            <>
+              <div className="input-group">
+                <label htmlFor="userId">User ID:</label>
+                <input
+                  id="userId"
+                  type="text"
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  placeholder="Enter User ID to view logs"
+                  className="user-id-input"
+                />
+              </div>
+              <button 
+                onClick={loadLogs} 
+                disabled={loading || !userId.trim()}
+                className="load-logs-button"
+              >
+                {loading ? (
+                  <>
+                    <span className="mini-spinner"></span>
+                    Loading...
+                  </>
+                ) : (
+                  'Load Logs'
+                )}
+              </button>
+              {canViewAllLogs && (
+                <button 
+                  onClick={loadAllLogs} 
+                  disabled={loading}
+                  className="load-all-logs-button"
+                >
+                  {loading ? (
+                    <>
+                      <span className="mini-spinner"></span>
+                      Loading...
+                    </>
+                  ) : (
+                    '📊 Load All Logs'
+                  )}
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="own-logs-section">
+              <p>You can only view your own activity logs.</p>
+              <button 
+                onClick={loadOwnLogs} 
+                disabled={loading}
+                className="load-logs-button"
+              >
+                {loading ? (
+                  <>
+                    <span className="mini-spinner"></span>
+                    Loading...
+                  </>
+                ) : (
+                  'View My Logs'
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {logs.length > 0 && (
@@ -149,6 +228,12 @@ export default function LogsViewer() {
           </div>
         )}
       </div>
+
+      {!canViewOtherUserLogs && (
+        <div className="permission-notice">
+          <p>ℹ️ Your role ({userRole}) has limited access to logs. You can only view your own activity logs.</p>
+        </div>
+      )}
 
       {error && (
         <div className="error-message">
@@ -177,7 +262,11 @@ export default function LogsViewer() {
       {!loading && filteredLogs.length > 0 && (
         <div className="logs-container">
           <div className="logs-header">
-            <h3>Activity Logs for User: {userId}</h3>
+            <h3>
+              {userId === "Your Logs" ? "Your Activity Logs" : 
+               userId === "All Users" ? "All Users Activity Logs" : 
+               `Activity Logs for User: ${userId}`}
+            </h3>
             <p>Showing {filteredLogs.length} of {logs.length} logs</p>
           </div>
           
@@ -207,6 +296,14 @@ export default function LogsViewer() {
                   </div>
                   
                   <div className="log-details">
+                    {log.userId && typeof log.userId === 'object' && (
+                      <div className="detail-row">
+                        <span className="detail-label">User:</span>
+                        <span className="detail-value user-info">
+                          {log.userId.name || 'Unknown'} ({log.userId.email || 'No email'}) - {log.userId.role || 'Unknown role'}
+                        </span>
+                      </div>
+                    )}
                     <div className="detail-row">
                       <span className="detail-label">IP Address:</span>
                       <span className="detail-value ip-address">{log.ipAddress || "Unknown"}</span>
@@ -241,11 +338,19 @@ export default function LogsViewer() {
         </div>
       )}
 
-      {!loading && !userId && (
+      {!loading && !userId && canViewOtherUserLogs && (
         <div className="initial-state">
           <div className="initial-icon">🔍</div>
           <h3>Enter User ID to View Logs</h3>
           <p>Enter a User ID above to view their activity logs and security events.</p>
+        </div>
+      )}
+
+      {!loading && !userId && !canViewOtherUserLogs && (
+        <div className="initial-state">
+          <div className="initial-icon">📊</div>
+          <h3>View Your Activity Logs</h3>
+          <p>Click the button above to view your own activity logs and security events.</p>
         </div>
       )}
     </div>

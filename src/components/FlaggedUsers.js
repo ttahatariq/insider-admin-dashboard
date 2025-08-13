@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import API from "../api";
 import "./FlaggedUsers.css";
 
-export default function FlaggedUsers() {
+export default function FlaggedUsers({ userRole, onUserUnblocked, onViewLogs }) {
   const [flagged, setFlagged] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
   const [processing, setProcessing] = useState(new Set());
 
   const fetchFlagged = async () => {
@@ -15,7 +15,11 @@ export default function FlaggedUsers() {
       const response = await API.get("/flagged-users");
       setFlagged(response.data);
     } catch (err) {
-      setError("Failed to fetch flagged users. Please try again later.");
+      if (err.response?.status === 403) {
+        setError("You don't have permission to view flagged users. Contact your administrator.");
+      } else {
+        setError("Failed to fetch flagged users. Please try again later.");
+      }
       console.error("Error fetching flagged users:", err);
     } finally {
       setLoading(false);
@@ -24,23 +28,46 @@ export default function FlaggedUsers() {
 
   useEffect(() => {
     fetchFlagged();
-  }, []);
+  }, [userRole]);
 
   const unblock = async (id) => {
+    if (!["Admin", "Manager"].includes(userRole)) {
+      setError("You don't have permission to unblock users.");
+      return;
+    }
+
     if (processing.has(id)) return;
     
     try {
       setProcessing(prev => new Set(prev).add(id));
       await API.post(`/unblock/${id}`);
       await fetchFlagged();
+      onUserUnblocked && onUserUnblocked(id);
     } catch (err) {
-      setError("Failed to unblock user. Please try again.");
+      if (err.response?.status === 403) {
+        setError("You don't have permission to unblock this user.");
+      } else {
+        setError("Failed to unblock user. Please try again.");
+      }
       console.error("Error unblocking user:", err);
     } finally {
       setProcessing(prev => {
         const newSet = new Set(prev);
         newSet.delete(id);
         return newSet;
+      });
+    }
+  };
+
+  const viewUserLogs = (userId, userName) => {
+    if (onViewLogs) {
+      onViewLogs(userId, userName);
+    } else {
+      // Fallback: copy the user ID
+      navigator.clipboard.writeText(userId).then(() => {
+        alert(`User ID copied: ${userId}\n\nYou can now go to the Activity Logs tab and paste this ID to view logs for ${userName}`);
+      }).catch(() => {
+        alert(`User ID: ${userId}\n\nYou can now go to the Activity Logs tab and paste this ID to view logs for ${userName}`);
       });
     }
   };
@@ -60,6 +87,8 @@ export default function FlaggedUsers() {
       default: return "ℹ️";
     }
   };
+
+  const canUnblockUsers = ["Admin", "Manager"].includes(userRole);
 
   if (loading) {
     return (
@@ -98,6 +127,12 @@ export default function FlaggedUsers() {
           </button>
         </div>
       </div>
+
+      {!canUnblockUsers && (
+        <div className="permission-notice">
+          <p>ℹ️ You have limited access to flagged users based on your role: <strong>{userRole}</strong></p>
+        </div>
+      )}
 
       {flagged.length === 0 ? (
         <div className="empty-state">
@@ -145,22 +180,31 @@ export default function FlaggedUsers() {
                     )}
                   </div>
 
-                  <div className="card-actions">
-                    <button
-                      onClick={() => unblock(user._id)}
-                      disabled={processing.has(user._id)}
-                      className={`unblock-button ${processing.has(user._id) ? 'processing' : ''}`}
-                    >
-                      {processing.has(user._id) ? (
-                        <>
-                          <span className="mini-spinner"></span>
-                          Processing...
-                        </>
-                      ) : (
-                        'Unblock User'
-                      )}
-                    </button>
-                  </div>
+                  {canUnblockUsers && (
+                    <div className="card-actions">
+                      <button
+                        onClick={() => viewUserLogs(user._id, user.name)}
+                        className="view-logs-button"
+                        title="View user activity logs"
+                      >
+                        📊 View Logs
+                      </button>
+                      <button
+                        onClick={() => unblock(user._id)}
+                        disabled={processing.has(user._id)}
+                        className={`unblock-button ${processing.has(user._id) ? 'processing' : ''}`}
+                      >
+                        {processing.has(user._id) ? (
+                          <>
+                            <span className="mini-spinner"></span>
+                            Processing...
+                          </>
+                        ) : (
+                          'Unblock User'
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -171,8 +215,13 @@ export default function FlaggedUsers() {
       <div className="component-footer">
         <p>
           <strong>Note:</strong> Flagged users are automatically detected based on suspicious activity patterns.
-          Review each case carefully before taking action.
+          {!canUnblockUsers && " Contact your administrator to manage blocked users."}
         </p>
+        {!canUnblockUsers && (
+          <p className="permission-note">
+            <small>Your role ({userRole}) has limited access to flagged user management</small>
+          </p>
+        )}
       </div>
     </div>
   );
