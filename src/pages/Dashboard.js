@@ -5,6 +5,7 @@ import LogsViewer from "../components/LogsViewer";
 import UserRegistration from "../components/UserRegistration";
 import FileDownloads from "../components/FileDownloads";
 import BehaviorMonitor from "../components/BehaviorMonitor";
+import AIAnalysis from "../components/AIAnalysis";
 import API from "../api";
 import "./Dashboard.css";
 
@@ -124,6 +125,7 @@ export default function Dashboard({ onLogout }) {
     { id: "logs", label: "Activity Logs", icon: "📊" },
     { id: "downloads", label: "File Downloads", icon: "⬇️" },
     { id: "behavior", label: "Behavior Monitor", icon: "🔍" },
+    { id: "ai-analysis", label: "AI Analysis", icon: "🤖" },
     { id: "register", label: "Register User", icon: "➕" }
   ].filter(tab => canAccessTab(tab.id));
 
@@ -224,6 +226,7 @@ export default function Dashboard({ onLogout }) {
         {activeTab === "logs" && <LogsViewer userRole={userRole} />}
         {activeTab === "downloads" && <FileDownloads userRole={userRole} />}
         {activeTab === "behavior" && <BehaviorMonitor userRole={userRole} />}
+        {activeTab === "ai-analysis" && <AIAnalysis userRole={userRole} />}
         {activeTab === "register" && <UserRegistration onUserCreated={() => {
           setActiveTab("users");
           fetchStats(); // Refresh stats after user creation

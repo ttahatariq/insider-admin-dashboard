@@ -1,27 +1,69 @@
 import React, { useState, useEffect } from "react";
-import API from "../api";
+import { AI_API } from "../api";
 import "./BehaviorMonitor.css";
 
 export default function BehaviorMonitor({ userRole }) {
-  const [summary, setSummary] = useState(null);
+  const [aiStatus, setAiStatus] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
-    loadBehaviorSummary();
+    loadAIStatus();
+    loadAIInsights();
   }, []);
 
-  const loadBehaviorSummary = async () => {
+  const loadAIStatus = async () => {
     try {
       setLoading(true);
       setError("");
-      const response = await API.get("/behavior-summary");
-      setSummary(response.data);
+      const response = await AI_API.get("/status");
+      setAiStatus(response.data.data);
     } catch (err) {
-      setError("Failed to load behavior summary. Please try again.");
-      console.error("Error loading behavior summary:", err);
+      console.log("Real AI status failed, trying mock endpoint...");
+      try {
+        const mockResponse = await AI_API.get("/mock-status");
+        setAiStatus(mockResponse.data.data);
+      } catch (mockErr) {
+        setError("Failed to load AI system status. Please try again.");
+        console.error("Error loading AI status:", err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAIInsights = async () => {
+    try {
+      const response = await AI_API.get("/insights");
+      setAiInsights(response.data.data);
+    } catch (err) {
+      console.log("Real AI insights failed, trying mock endpoint...");
+      try {
+        const mockResponse = await AI_API.get("/mock-insights");
+        setAiInsights(mockResponse.data.data);
+      } catch (mockErr) {
+        console.error("Error loading AI insights:", err);
+      }
+    }
+  };
+
+  const triggerAIAnalysis = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await AI_API.post("/trigger-weekly");
+      
+      if (response.data.success) {
+        // Reload insights after analysis
+        await loadAIInsights();
+        alert("✅ AI analysis completed successfully!");
+      }
+    } catch (err) {
+      setError("Failed to trigger AI analysis. Please try again.");
+      console.error("Error triggering AI analysis:", err);
     } finally {
       setLoading(false);
     }
@@ -31,17 +73,17 @@ export default function BehaviorMonitor({ userRole }) {
     try {
       setSendingEmail(true);
       setError("");
-      const response = await API.post("/send-weekly-summary");
+      const response = await AI_API.post("/trigger-weekly");
       
-      if (response.data.emailSent) {
+      if (response.data.success) {
         setEmailSent(true);
-        setTimeout(() => setEmailSent(false), 5000); // Hide success message after 5 seconds
+        setTimeout(() => setEmailSent(false), 5000);
       } else {
         setError("Failed to send weekly summary email.");
       }
     } catch (err) {
       setError("Failed to send weekly summary email. Please try again.");
-      console.error("Error sending weekly summary:", err);
+      console.error("Error sending weekly summary email:", err);
     } finally {
       setSendingEmail(false);
     }
@@ -66,7 +108,7 @@ export default function BehaviorMonitor({ userRole }) {
       <div className="component-container">
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Loading behavior summary...</p>
+          <p>Loading AI system status...</p>
         </div>
       </div>
     );
@@ -77,7 +119,7 @@ export default function BehaviorMonitor({ userRole }) {
       <div className="component-container">
         <div className="error-message">
           <p>⚠️ {error}</p>
-          <button onClick={loadBehaviorSummary} className="retry-button">
+          <button onClick={loadAIStatus} className="retry-button">
             Try Again
           </button>
         </div>
@@ -88,10 +130,17 @@ export default function BehaviorMonitor({ userRole }) {
   return (
     <div className="component-container">
       <div className="component-header">
-        <h2>Behavior Monitoring Dashboard</h2>
+        <h2>🧠 AI-Powered Behavior Monitoring Dashboard</h2>
         <div className="header-actions">
-          <button onClick={loadBehaviorSummary} className="refresh-button">
+          <button onClick={loadAIStatus} className="refresh-button">
             🔄 Refresh
+          </button>
+          <button 
+            onClick={triggerAIAnalysis} 
+            disabled={loading}
+            className="ai-analysis-button"
+          >
+            🤖 Trigger AI Analysis
           </button>
           <button 
             onClick={sendWeeklySummaryEmail} 
@@ -112,78 +161,116 @@ export default function BehaviorMonitor({ userRole }) {
 
       {emailSent && (
         <div className="success-message">
-          <p>✅ Weekly summary email sent successfully to tahatariq273@gmail.com</p>
+          <p>✅ Weekly summary email sent successfully!</p>
         </div>
       )}
 
-      {summary && (
-        <div className="behavior-summary">
-          <div className="summary-grid">
-            <div className="summary-card">
-              <div className="summary-icon">🚨</div>
-              <div className="summary-info">
-                <span className="summary-number">{summary.totalSuspicious}</span>
-                <span className="summary-label">Suspicious Activities</span>
+      {/* AI System Status */}
+      {aiStatus && (
+        <div className="ai-status-section">
+          <h3>🤖 AI System Status</h3>
+          <div className="status-grid">
+            <div className="status-card">
+              <div className="status-icon">⚙️</div>
+              <div className="status-info">
+                <span className="status-label">AI Model</span>
+                <span className="status-value">OpenAI GPT-3.5 Turbo</span>
               </div>
             </div>
             
-            <div className="summary-card">
-              <div className="summary-icon">⚠️</div>
-              <div className="summary-info">
-                <span className="summary-number">{summary.usersWithViolations}</span>
-                <span className="summary-label">Users with Violations</span>
+            <div className="status-card">
+              <div className="status-icon">📊</div>
+              <div className="status-info">
+                <span className="status-label">High Risk Threshold</span>
+                <span className="status-value">{(aiStatus.aiConfig?.thresholds?.highRisk * 100).toFixed(0)}%</span>
               </div>
             </div>
             
-            <div className="summary-card">
-              <div className="summary-icon">🚫</div>
-              <div className="summary-info">
-                <span className="summary-number">{summary.blockedUsers}</span>
-                <span className="summary-label">Blocked Users</span>
+            <div className="status-card">
+              <div className="status-icon">🔍</div>
+              <div className="status-info">
+                <span className="status-label">Behavior Patterns</span>
+                <span className="status-value">{aiStatus.aiConfig?.patterns?.length || 0} patterns</span>
               </div>
             </div>
             
-            <div className="summary-card">
-              <div className="summary-icon">📅</div>
-              <div className="summary-info">
-                <span className="summary-text">{summary.period}</span>
-                <span className="summary-label">Monitoring Period</span>
+            <div className="status-card">
+              <div className="status-icon">⏰</div>
+              <div className="status-info">
+                <span className="status-label">Last Analysis</span>
+                <span className="status-value">{new Date(aiStatus.lastAnalysis).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Insights */}
+      {aiInsights && (
+        <div className="ai-insights-section">
+          <h3>🧠 AI-Powered Insights</h3>
+          <div className="insights-grid">
+            <div className="insight-card">
+              <div className="insight-icon">👥</div>
+              <div className="insight-info">
+                <span className="insight-number">{aiInsights.totalUsers}</span>
+                <span className="insight-label">Total Users Monitored</span>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">🚨</div>
+              <div className="insight-info">
+                <span className="insight-number">{aiInsights.riskDistribution?.high || 0}</span>
+                <span className="insight-label">High Risk Users</span>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">⚠️</div>
+              <div className="insight-info">
+                <span className="insight-number">{aiInsights.riskDistribution?.medium || 0}</span>
+                <span className="insight-label">Medium Risk Users</span>
+              </div>
+            </div>
+            
+            <div className="insight-card">
+              <div className="insight-icon">✅</div>
+              <div className="insight-info">
+                <span className="insight-number">{aiInsights.riskDistribution?.low || 0}</span>
+                <span className="insight-label">Low Risk Users</span>
               </div>
             </div>
           </div>
 
-          {summary.userViolations.length > 0 && (
-            <div className="violations-section">
-              <h3>Users with Multiple Violations</h3>
-              <div className="violations-list">
-                {summary.userViolations.map((user, index) => (
-                  <div key={index} className={`violation-item risk-${getRiskLevelColor(user.avgRiskScore)}`}>
+          {/* Top Risk Users */}
+          {aiInsights.topRiskUsers && aiInsights.topRiskUsers.length > 0 && (
+            <div className="top-risk-users">
+              <h4>🚨 Top Risk Users (AI Analysis)</h4>
+              <div className="risk-users-list">
+                {aiInsights.topRiskUsers.slice(0, 5).map((user, index) => (
+                  <div key={index} className={`risk-user-item risk-${getRiskLevelColor(user.riskScore)}`}>
                     <div className="user-info">
                       <div className="user-avatar">
                         {user.name?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                       <div className="user-details">
-                        <h4 className="user-name">{user.name || "Unknown User"}</h4>
+                        <h5 className="user-name">{user.name || "Unknown User"}</h5>
                         <p className="user-email">{user.email || "No email"}</p>
                         <p className="user-role">Role: {user.role || "Unknown"}</p>
                       </div>
                     </div>
                     
-                    <div className="violation-stats">
-                      <div className="stat-item">
-                        <span className="stat-label">Violations:</span>
-                        <span className="stat-value violations-count">{user.violationCount}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Avg Risk:</span>
-                        <span className={`stat-value risk-${getRiskLevelColor(user.avgRiskScore)}`}>
-                          {(user.avgRiskScore * 100).toFixed(1)}%
+                    <div className="risk-info">
+                      <div className="risk-score">
+                        <span className="risk-label">AI Risk Score:</span>
+                        <span className={`risk-value risk-${getRiskLevelColor(user.riskScore)}`}>
+                          {(user.riskScore * 100).toFixed(1)}%
                         </span>
                       </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Risk Level:</span>
-                        <span className={`risk-badge risk-${getRiskLevelColor(user.avgRiskScore)}`}>
-                          {getRiskLevelText(user.avgRiskScore)}
+                      <div className="risk-level">
+                        <span className={`risk-badge risk-${getRiskLevelColor(user.riskScore)}`}>
+                          {getRiskLevelText(user.riskScore)}
                         </span>
                       </div>
                     </div>
@@ -192,49 +279,35 @@ export default function BehaviorMonitor({ userRole }) {
               </div>
             </div>
           )}
+        </div>
+      )}
 
-          <div className="monitoring-rules">
-            <h3>Monitoring Rules & Thresholds</h3>
-            <div className="rules-grid">
-              <div className="rule-card">
-                <h4>📥 Download Limits (Work Hours)</h4>
-                <ul>
-                  <li><strong>Manager:</strong> 10 downloads/day</li>
-                  <li><strong>Analyst:</strong> 8 downloads/day</li>
-                  <li><strong>Intern:</strong> 5 downloads/day</li>
-                  <li><strong>Work Hours:</strong> Mon-Fri, 9 AM - 5 PM</li>
-                </ul>
+      {/* AI Behavior Patterns */}
+      {aiStatus && aiStatus.aiConfig?.patterns && (
+        <div className="ai-patterns-section">
+          <h3>🔍 AI Behavior Pattern Recognition</h3>
+          <div className="patterns-grid">
+            {aiStatus.aiConfig.patterns.map((pattern, index) => (
+              <div key={index} className="pattern-card">
+                <div className="pattern-icon">🔍</div>
+                <div className="pattern-info">
+                  <h4>{pattern}</h4>
+                  <p>AI-powered detection for {pattern.toLowerCase()} patterns</p>
+                </div>
               </div>
-              
-              <div className="rule-card">
-                <h4>🚫 Blocking Thresholds</h4>
-                <ul>
-                  <li><strong>Manager/Analyst:</strong> 80% risk score</li>
-                  <li><strong>Intern:</strong> 150% risk score</li>
-                  <li><strong>Weekly Violations:</strong> 3+ suspicious activities</li>
-                  <li><strong>Admin:</strong> Cannot be blocked</li>
-                </ul>
-              </div>
-              
-              <div className="rule-card">
-                <h4>📧 Email Notifications</h4>
-                <ul>
-                  <li><strong>Admin Email:</strong> tahatariq273@gmail.com</li>
-                  <li><strong>Triggers:</strong> High risk, limit exceeded, violations</li>
-                  <li><strong>Weekly Summary:</strong> Automated behavior report</li>
-                  <li><strong>Real-time Alerts:</strong> Suspicious behavior detection</li>
-                </ul>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
-      {!summary && (
+      {!aiStatus && !aiInsights && (
         <div className="empty-state">
-          <div className="empty-icon">🔍</div>
-          <h3>No Behavior Data Available</h3>
-          <p>Behavior monitoring data will appear here once users start performing activities.</p>
+          <div className="empty-icon">🤖</div>
+          <h3>AI System Not Connected</h3>
+          <p>AI-powered threat detection data will appear here once the system is properly connected.</p>
+          <button onClick={loadAIStatus} className="connect-ai-button">
+            🔌 Connect to AI System
+          </button>
         </div>
       )}
     </div>

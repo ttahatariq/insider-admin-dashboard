@@ -13,7 +13,20 @@ export default function FlaggedUsers({ userRole, onUserUnblocked, onViewLogs }) 
       setLoading(true);
       setError(null);
       const response = await API.get("/flagged-users");
-      setFlagged(response.data);
+      
+      // Debug: Log the data received
+      console.log('Flagged users data received:', response.data);
+      
+      // Validate and clean the data
+      const cleanedData = response.data.map(user => {
+        if (user.riskNotes && !Array.isArray(user.riskNotes)) {
+          console.warn('Invalid riskNotes format for user:', user._id, user.riskNotes);
+          user.riskNotes = [];
+        }
+        return user;
+      });
+      
+      setFlagged(cleanedData);
     } catch (err) {
       if (err.response?.status === 403) {
         setError("You don't have permission to view flagged users. Contact your administrator.");
@@ -73,7 +86,7 @@ export default function FlaggedUsers({ userRole, onUserUnblocked, onViewLogs }) 
   };
 
   const getRiskLevel = (riskNotes) => {
-    if (!riskNotes || riskNotes.length === 0) return "low";
+    if (!riskNotes || !Array.isArray(riskNotes) || riskNotes.length === 0) return "low";
     if (riskNotes.length > 3) return "high";
     if (riskNotes.length > 1) return "medium";
     return "low";
@@ -167,13 +180,26 @@ export default function FlaggedUsers({ userRole, onUserUnblocked, onViewLogs }) 
                 <div className="card-content">
                   <div className="risk-details">
                     <h5>Risk Factors:</h5>
-                    {user.riskNotes && user.riskNotes.length > 0 ? (
+                    {user.riskNotes && Array.isArray(user.riskNotes) && user.riskNotes.length > 0 ? (
                       <ul className="risk-list">
-                        {user.riskNotes.map((note, index) => (
-                          <li key={index} className="risk-item">
-                            {note}
-                          </li>
-                        ))}
+                        {user.riskNotes.map((note, index) => {
+                          let displayText = 'Unknown risk note';
+                          try {
+                            if (typeof note === 'string') {
+                              displayText = note;
+                            } else if (note && typeof note === 'object' && note.reason) {
+                              displayText = `${note.reason} (${note.action || 'unknown action'})`;
+                            }
+                          } catch (error) {
+                            console.error('Error processing risk note:', error, note);
+                            displayText = 'Error processing risk note';
+                          }
+                          return (
+                            <li key={index} className="risk-item">
+                              {displayText}
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
                       <p className="no-notes">No specific risk notes available</p>
